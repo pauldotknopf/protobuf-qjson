@@ -10,9 +10,8 @@ struct QJSEngine;
 class ProtobufJsonConverter
 {
 public:
-    static bool messageToJsonValue(google::protobuf::Message* message, QJsonValue& jsonValue, QJSEngine* jsEngine);
-    static bool messageToJSValue(google::protobuf::Message* message, QJSValue& jsValue, QJSEngine* jsEngine);
-    static bool jsonValueToMessage(QJsonValue& jsonValue, google::protobuf::Message* message);
+    static bool messageToJsonValue(google::protobuf::Message* message, QJsonValue& jsonValue);
+    static bool jsonValueToMessage(const QJsonValue& jsonValue, google::protobuf::Message* message);
 private:
     ProtobufJsonConverter();
 };

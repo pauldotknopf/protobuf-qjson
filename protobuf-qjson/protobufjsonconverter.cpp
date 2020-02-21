@@ -39,57 +39,13 @@ ProtobufJsonConverter::ProtobufJsonConverter()
 
 }
 
-bool ProtobufJsonConverter::messageToJsonValue(google::protobuf::Message* message, QJsonValue& jsonValue, QJSEngine* jsEngine)
+bool ProtobufJsonConverter::messageToJsonValue(google::protobuf::Message* message, QJsonValue& jsonValue)
 {
-    std::string output;
-    google::protobuf::util::JsonOptions jsonOptions;
-    auto result = google::protobuf::util::MessageToJsonString(*message, &output, jsonOptions);
-    if(!result.ok()) {
-        qCritical("Message to json error: %s", result.error_message().data());
-        jsonValue = QJsonValue::Undefined;
-        return false;
-    }
-
-    QJSValue func = jsEngine->evaluate("JSON.parse");
-    auto jsValue = func.call(QJSValueList{ QString::fromStdString(output) });
-
-    // TODO: Check for errors
-    if(jsValue.isError()) {
-        qCritical("JSON.parse serror");
-        jsonValue = QJsonValue::Undefined;
-        return false;
-    }
-
-    qDebug() << jsValue.isObject();
-
+    jsonValue = QJsonValue(true);
     return true;
 }
 
-bool ProtobufJsonConverter::messageToJSValue(google::protobuf::Message* message, QJSValue& jsValue, QJSEngine* jsEngine)
-{
-    std::string output;
-    google::protobuf::util::JsonOptions jsonOptions;
-    auto result = google::protobuf::util::MessageToJsonString(*message, &output, jsonOptions);
-    if(!result.ok()) {
-        qCritical("Message to json error: %s", result.error_message().data());
-        jsValue = QJSValue::UndefinedValue;
-        return false;
-    }
-
-    QJSValue func = jsEngine->evaluate("JSON.parse");
-    jsValue = func.call(QJSValueList{ QString::fromStdString(output) });
-
-    // TODO: Check for errors
-    if(jsValue.isError()) {
-        qCritical("JSON.parse serror");
-        jsValue = QJSValue::UndefinedValue;
-        return false;
-    }
-
-    return true;
-}
-
-bool ProtobufJsonConverter::jsonValueToMessage(QJsonValue& jsonValue, google::protobuf::Message* message)
+bool ProtobufJsonConverter::jsonValueToMessage(const QJsonValue& jsonValue, google::protobuf::Message* message)
 {
     auto object = jsonValue.toObject();
     QJsonDocument doc(object);
