@@ -44,6 +44,7 @@ bool ProtobufJsonConverter::messageToJsonValue(google::protobuf::Message* messag
     auto typeResolver = google::protobuf::util::NewTypeResolverForDescriptorPool("type.googleapis.com", google::protobuf::DescriptorPool::generated_pool());
     std::string binaryString;
     if(!message->SerializeToString(&binaryString)) {
+        qDebug("couldn't serialize message to string");
         return false;
     }
 
@@ -64,6 +65,7 @@ bool ProtobufJsonConverter::messageToJsonValue(google::protobuf::Message* messag
 bool ProtobufJsonConverter::jsonValueToMessage(const QJsonValue& jsonValue, google::protobuf::Message* message, bool ignoreInvalidFields)
 {
     if(jsonValue.type() != QJsonValue::Object) {
+        qCritical("invalid json value type: %d", jsonValue.type());
         return false;
     }
 
@@ -108,6 +110,7 @@ bool ProtobufJsonConverter::stringToJsonValue(const QString& str, QJsonValue& js
         }
     }
 
+    qCritical("failed to convert to json object: %s", qPrintable(str));
     jsonValue = QJsonValue::Undefined;
     return false;
 }
@@ -125,6 +128,7 @@ bool ProtobufJsonConverter::stringToJsonValue(const std::string& str, QJsonValue
         }
     }
 
+    qCritical("failed to convert to json object: %s", str.c_str());
     jsonValue = QJsonValue::Undefined;
     return false;
 }
