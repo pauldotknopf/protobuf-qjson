@@ -1,3 +1,4 @@
+QT += quick
 CONFIG += c++11 link_pkgconfig
 
 PKGCONFIG += protobuf
