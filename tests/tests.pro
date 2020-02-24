@@ -6,4 +6,10 @@ CONFIG -= app_bundle
 
 TEMPLATE = app
 
-SOURCES +=  tst_protobuftests.cpp
+include(../src/protobuf-qjson.pri)
+
+SOURCES +=  tst_protobuftests.cpp \
+    proto/types.pb.cc
+
+HEADERS += \
+    proto/types.pb.h

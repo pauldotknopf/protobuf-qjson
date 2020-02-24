@@ -41,18 +41,36 @@ ProtobufJsonConverter::ProtobufJsonConverter()
 
 bool ProtobufJsonConverter::messageToJsonValue(google::protobuf::Message* message, QJsonValue& jsonValue)
 {
-    jsonValue = QJsonValue(true);
-    return true;
+    auto typeResolver = google::protobuf::util::NewTypeResolverForDescriptorPool("type.googleapis.com", google::protobuf::DescriptorPool::generated_pool());
+    std::string binaryString;
+    if(!message->SerializeToString(&binaryString)) {
+        return false;
+    }
+
+    auto url = std::string("type.googleapis.com/");
+    url.append(message->GetDescriptor()->full_name());
+    std::string json;
+    google::protobuf::util::JsonPrintOptions options;
+    options.always_print_primitive_fields = true;
+    auto status = google::protobuf::util::BinaryToJsonString(typeResolver, url, binaryString, &json, options);
+    if(!status.ok()) {
+        qCritical("error converting message to json");
+        return false;
+    }
+
+    return stringToJsonValue(json, jsonValue);
 }
 
-bool ProtobufJsonConverter::jsonValueToMessage(const QJsonValue& jsonValue, google::protobuf::Message* message)
+bool ProtobufJsonConverter::jsonValueToMessage(const QJsonValue& jsonValue, google::protobuf::Message* message, bool ignoreInvalidFields)
 {
+    if(jsonValue.type() != QJsonValue::Object) {
+        return false;
+    }
+
     auto object = jsonValue.toObject();
     QJsonDocument doc(object);
     QByteArray bytes = doc.toJson();
 
-    auto url = std::string("type.googleapis.com/");
-    url.append(message->GetDescriptor()->full_name());
     auto typeResolver = google::protobuf::util::NewTypeResolverForDescriptorPool("type.googleapis.com", message->GetDescriptor()->file()->pool());
 
     google::protobuf::io::ArrayInputStream inputStream(bytes.data(), bytes.size());
@@ -60,6 +78,9 @@ bool ProtobufJsonConverter::jsonValueToMessage(const QJsonValue& jsonValue, goog
     QByteArrayOutputStream outputStream(&byteArray);
 
     google::protobuf::util::JsonParseOptions parseOptions;
+    parseOptions.ignore_unknown_fields = ignoreInvalidFields;
+    auto url = std::string("type.googleapis.com/");
+    url.append(message->GetDescriptor()->full_name());
     auto result = google::protobuf::util::JsonToBinaryStream(typeResolver, url, &inputStream, &outputStream, parseOptions);
     if(!result.ok()) {
         qCritical("Json to message error: %s", result.error_message().data());
@@ -72,4 +93,38 @@ bool ProtobufJsonConverter::jsonValueToMessage(const QJsonValue& jsonValue, goog
     }
 
     return true;
+}
+
+bool ProtobufJsonConverter::stringToJsonValue(const QString& str, QJsonValue& jsonValue)
+{
+    QJsonDocument doc = QJsonDocument::fromJson(str.toUtf8());
+    if(!doc.isNull())
+    {
+        if(doc.isObject())
+        {
+            auto obj = doc.object();
+            jsonValue = QJsonValue::fromVariant(obj);
+            return true;
+        }
+    }
+
+    jsonValue = QJsonValue::Undefined;
+    return false;
+}
+
+bool ProtobufJsonConverter::stringToJsonValue(const std::string& str, QJsonValue& jsonValue)
+{
+    QJsonDocument doc = QJsonDocument::fromJson(str.c_str());
+    if(!doc.isNull())
+    {
+        if(doc.isObject())
+        {
+            auto obj = doc.object();
+            jsonValue = QJsonValue::fromVariant(obj);
+            return true;
+        }
+    }
+
+    jsonValue = QJsonValue::Undefined;
+    return false;
 }
